@@ -247,7 +247,6 @@ cd backend
 python app.py
 Open your browser and navigate to http://localhost:5000
 
-🌐 Live Deployment
 GitHub Repository
 
 https://github.com/Sridaya/odoo-hackathon-2025
