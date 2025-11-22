@@ -1,0 +1,138 @@
+<!-- backend/templates/warehouse.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Warehouse - StockMaster</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .sidebar { background: #1e3a8a; min-height: 100vh; color: white; }
+        .nav-link {
+            color: white !important;
+            padding: 15px;
+            display: block;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: #2563eb;
+            transform: translateX(5px);
+        }
+        .warehouse-card {
+            transition: all 0.3s;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            background: white !important;
+            color: #1f2937 !important;
+        }
+        .warehouse-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        .card-title { color: #111827; font-weight: 700; }
+        .card-text { color: #4b5563; }
+        .badge-custom {
+            background: #e5e7eb;
+            color: #1f2937;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+<div class="row">
+
+    <!-- Sidebar -->
+    <div class="col-md-2 sidebar p-4">
+        <h3 class="text-center mb-4">StockMaster</h3>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/products" class="nav-link">Products</a>
+        <a href="/receipts" class="nav-link">Receipts</a>
+        <a href="/deliveries" class="nav-link">Deliveries</a>
+        <a href="/transfers" class="nav-link">Transfers</a>
+        <a href="/warehouse" class="nav-link active">Warehouse</a>
+        <a href="/profile" class="nav-link">Profile</a>
+        <a href="/logout" class="nav-link">Logout</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-10 p-5">
+        <div class="d-flex align-items-center mb-5">
+            <h1 class="display-5 me-3">Warehouse Locations</h1>
+            <i class="fas fa-building fa-2x text-primary"></i>
+        </div>
+
+        <div class="row g-5">
+            <!-- Main Warehouse -->
+            <div class="col-md-4">
+                <div class="card warehouse-card h-100 text-center p-4">
+                    <div class="card-body">
+                        <i class="fas fa-warehouse fa-4x mb-4 text-success"></i>
+                        <h3 class="card-title">Main Warehouse</h3>
+                        <p class="card-text fs-5">Primary Storage Facility</p>
+                        <span class="badge badge-custom fs-6 px-4 py-2">Default Location</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Production Floor -->
+            <div class="col-md-4">
+                <div class="card warehouse-card h-100 text-center p-4">
+                    <div class="card-body">
+                        <i class="fas fa-industry fa-4x mb-4 text-primary"></i>
+                        <h3 class="card-title">Production Floor</h3>
+                        <p class="card-text fs-5">Manufacturing & Assembly</p>
+                        <span class="badge badge-custom fs-6 px-4 py-2">Processing Area</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Retail Store -->
+            <div class="col-md-4">
+                <div class="card warehouse-card h-100 text-center p-4">
+                    <div class="card-body">
+                        <i class="fas fa-store fa-4x mb-4 text-warning"></i>
+                        <h3 class="card-title">Retail Store</h3>
+                        <p class="card-text fs-5">Customer Pickup Point</p>
+                        <span class="badge badge-custom fs-6 px-4 py-2">Sales Outlet</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <h4 class="mt-5 mb-3">Current Stock by Location</h4>
+<table class="table table-hover">
+    <thead class="table-primary">
+        <tr><th>Warehouse</th><th>Total Products</th><th>Total Quantity</th></tr>
+    </thead>
+    <tbody id="warehouseStock"></tbody>
+</table>
+
+<script>
+fetch('/api/products').then(r => r.json()).then(products => {
+    const summary = {};
+    products.forEach(p => {
+        const loc = p.warehouse;
+        if (!summary[loc]) summary[loc] = {count: 0, qty: 0};
+        summary[loc].count += 1;
+        summary[loc].qty += p.stock;
+    });
+    const tbody = document.getElementById('warehouseStock');
+    for (const [loc, data] of Object.entries(summary)) {
+        tbody.innerHTML += `<tr><td><strong>${loc}</strong></td><td>${data.count}</td><td>${data.qty}</td></tr>`;
+    }
+});
+</script>
+
+        <div class="text-center mt-5">
+            <p class="text-muted fs-5">
+                <i class="fas fa-info-circle text-primary"></i>
+                <strong>All stock movements are tracked across these 3 locations automatically</strong>
+            </p>
+        </div>
+    </div>
+</div>
+</div>
+</body>
+</html>

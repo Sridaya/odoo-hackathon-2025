@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Products - StockMaster</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .sidebar { background: #1e3a8a; min-height: 100vh; color: white; }
+        .nav-link { 
+            color: white !important; 
+            padding: 15px; 
+            display: block; 
+            border-radius: 8px; 
+            transition: all 0.3s;
+        }
+        .nav-link:hover, .nav-link.active { 
+            background: #2563eb; 
+            transform: translateX(5px);
+        }
+        .stock-low { color: #f59e0b !important; font-weight: bold; }
+        .stock-zero { color: #dc3545 !important; font-weight: bold; }
+        .filter-card { box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+<div class="row">
+
+    <!-- Sidebar -->
+    <div class="col-md-2 sidebar p-4">
+        <h3 class="text-center mb-4">StockMaster</h3>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/products" class="nav-link active">Products</a>
+        <a href="/receipts" class="nav-link">Receipts</a>
+        <a href="/deliveries" class="nav-link">Deliveries</a>
+        <a href="/transfers" class="nav-link">Transfers</a>
+        <a href="/warehouse" class="nav-link">Warehouse</a>
+        <a href="/profile" class="nav-link">Profile</a>
+        <a href="/logout" class="nav-link">Logout</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-10 p-5">
+        <h1 class="display-5 mb-4">Products Management</h1>
+
+        <!-- Add Product -->
+        <div class="card mb-4 filter-card">
+            <div class="card-body">
+                <h5 class="mb-3">Add New Product</h5>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <input id="name" class="form-control" placeholder="Product Name">
+                    </div>
+                    <div class="col-md-3">
+                        <input id="sku" class="form-control" placeholder="SKU Code">
+                    </div>
+                    <div class="col-md-2">
+                        <input id="stock" type="number" class="form-control" placeholder="Initial Stock" value="0" min="0">
+                    </div>
+                    <div class="col-md-4">
+                        <button onclick="addProduct()" class="btn btn-success w-100">
+                            Add Product
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Filters -->
+        <div class="card mb-4 filter-card">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                Search
+                            </span>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search by Name or SKU..." onkeyup="filterProducts()">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="warehouseFilter" class="form-select" onchange="filterProducts()">
+                            <option value="">All Warehouses</option>
+                            <option>Main Warehouse</option>
+                            <option>Production Floor</option>
+                            <option>Retail Store</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="stockFilter" class="form-select" onchange="filterProducts()">
+                            <option value="">All Stock Levels</option>
+                            <option value="low">Low Stock (less than 20)</option>
+                            <option value="zero">Out of Stock</option>
+                            <option value="normal">In Stock (20+)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Table -->
+        <div class="card filter-card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="productTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Name</th>
+                                <th>SKU</th>
+                                <th>Stock</th>
+                                <th>Warehouse</th>
+                                <th width="200">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productRows">
+                            <!-- Filled by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center py-5 text-muted" id="noResults" style="display:none;">
+                    No products found matching your filters
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+let allProducts = [];
+
+function loadProducts() {
+    fetch('/api/products')
+        .then(r => r.json())
+        .then(products => {
+            allProducts = products;
+            filterProducts();
+        });
+}
+
+function filterProducts() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const warehouse = document.getElementById('warehouseFilter').value;
+    const stockFilter = document.getElementById('stockFilter').value;
+
+    const filtered = allProducts.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search);
+        const matchesWarehouse = !warehouse || p.warehouse === warehouse;
+        let matchesStock = true;
+        if (stockFilter === 'low') matchesStock = p.stock > 0 && p.stock < 20;
+        if (stockFilter === 'zero') matchesStock = p.stock === 0;
+        if (stockFilter === 'normal') matchesStock = p.stock >= 20;
+        
+        return matchesSearch && matchesWarehouse && matchesStock;
+    });
+
+    const tbody = document.getElementById('productRows');
+    const noResults = document.getElementById('noResults');
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        noResults.style.display = 'block';
+        return;
+    }
+    
+    noResults.style.display = 'none';
+    tbody.innerHTML = '';
+    
+    filtered.forEach(p => {
+        const stockClass = p.stock === 0 ? 'stock-zero' : (p.stock < 20 ? 'stock-low' : '');
+        const stockText = p.stock === 0 ? 'Out of Stock' : (p.stock < 20 ? p.stock + ' (Low)' : p.stock);
+        
+        tbody.innerHTML += `
+            <tr>
+                <td><strong>${p.name}</strong></td>
+                <td>${p.sku}</td>
+                <td class="${stockClass}">${stockText}</td>
+                <td><span class="badge bg-primary">${p.warehouse}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-success me-2" onclick="receive(${p.id})" title="Receive Stock">
+                        Receive
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deliver(${p.id})" title="Deliver Stock">
+                        Deliver
+                    </button>
+                </td>
+            </tr>`;
+    });
+}
+
+function addProduct() {
+    const name = document.getElementById('name').value.trim();
+    const sku = document.getElementById('sku').value.trim();
+    const stock = parseInt(document.getElementById('stock').value) || 0;
+    
+    if (!name || !sku) {
+        alert('Please fill Name and SKU');
+        return;
+    }
+    
+    const data = { name, sku, stock };
+    fetch('/api/add_product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(() => {
+        document.getElementById('name').value = '';
+        document.getElementById('sku').value = '';
+        document.getElementById('stock').value = '0';
+        loadProducts();
+    });
+}
+
+function receive(id) {
+    const qty = prompt("Enter quantity to receive:");
+    if (qty && qty > 0) {
+        fetch('/api/receive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, qty: parseInt(qty) })
+        }).then(() => loadProducts());
+    }
+}
+
+function deliver(id) {
+    const qty = prompt("Enter quantity to deliver:");
+    if (qty && qty > 0) {
+        fetch('/api/deliver', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, qty: parseInt(qty) })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) loadProducts();
+            else alert(res.error || 'Not enough stock');
+        });
+    }
+}
+
+// Load on start and refresh every 3 seconds
+loadProducts();
+setInterval(loadProducts, 3000);
+</script>
+</body>
+</html>
